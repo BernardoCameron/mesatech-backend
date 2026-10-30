@@ -1,0 +1,9 @@
+# SOLO PARA PRUEBAS LOCALES: el BFF no valida tokens de Entra ID.
+# Acepta los headers X-Test-Rol (Cliente, Operador, Administrador) y X-Test-Usuario.
+# Uso:  docker compose -f docker-compose.yml -f docker-compose.sinauth.yml up -d --build
+# Para volver a Entra ID: levantar solo con docker-compose.yml (sin este archivo).
+# Nunca usar en EC2.
+services:
+  bff:
+    environment:
+      SPRING_PROFILES_ACTIVE: sinauth

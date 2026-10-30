@@ -1,0 +1,23 @@
+# Env files con datos sensibles (Client ID, Tenant ID, endpoints)
+.env
+.env.local
+.env.*.local
+
+# Frontend (Node/CRA)
+node_modules/
+build/
+coverage/
+
+# Backend (Maven)
+target/
+*.class
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

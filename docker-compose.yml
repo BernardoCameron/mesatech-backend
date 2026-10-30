@@ -1,0 +1,64 @@
+# Entorno local: BFF + 2 microservicios + base de datos (PostgreSQL).
+# El frontend va en su propio repo (mesatech-web) y RabbitMQ en el suyo (mesatech-rabbit).
+# Para probar sin Entra ID: ver docker-compose.sinauth.yml.
+services:
+  postgres:
+    restart: unless-stopped
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: mesatech
+      POSTGRES_USER: mesatech
+      POSTGRES_PASSWORD: mesatech
+    ports:
+      - "5432:5432"
+    volumes:
+      - mesatech_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mesatech"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ms-solicitudes:
+    restart: unless-stopped
+    build: ./ms-solicitudes
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/mesatech
+      DB_USER: mesatech
+      DB_PASSWORD: mesatech
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ms-catalogo:
+    restart: unless-stopped
+    build: ./ms-catalogo
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/mesatech
+      DB_USER: mesatech
+      DB_PASSWORD: mesatech
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  bff:
+    restart: unless-stopped
+    build: ./bff
+    environment:
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+      AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
+      MS_SOLICITUDES_URL: http://ms-solicitudes:8081
+      MS_CATALOGO_URL: http://ms-catalogo:8082
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - ms-solicitudes
+      - ms-catalogo
+
+volumes:
+  mesatech_pgdata:
