@@ -1,11 +1,18 @@
 package cl.mesatech.solicitudes.service;
 
+import cl.mesatech.solicitudes.dto.CambiarEstadoRequest;
+import cl.mesatech.solicitudes.dto.ComentarioRequest;
 import cl.mesatech.solicitudes.dto.CrearSolicitudRequest;
+import cl.mesatech.solicitudes.model.ComentarioSolicitud;
 import cl.mesatech.solicitudes.model.EstadoSolicitud;
 import cl.mesatech.solicitudes.model.HistorialEstado;
 import cl.mesatech.solicitudes.model.Solicitud;
+import cl.mesatech.solicitudes.model.TipoComentario;
+import cl.mesatech.solicitudes.repository.ComentarioRepository;
 import cl.mesatech.solicitudes.repository.HistorialEstadoRepository;
 import cl.mesatech.solicitudes.repository.SolicitudRepository;
+import cl.mesatech.solicitudes.web.AccesoDenegadoException;
+import cl.mesatech.solicitudes.web.DatoInvalidoException;
 import cl.mesatech.solicitudes.web.EstadoInvalidoException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,10 +45,13 @@ public class SolicitudService {
 
     private final SolicitudRepository repository;
     private final HistorialEstadoRepository historialRepository;
+    private final ComentarioRepository comentarioRepository;
 
-    public SolicitudService(SolicitudRepository repository, HistorialEstadoRepository historialRepository) {
+    public SolicitudService(SolicitudRepository repository, HistorialEstadoRepository historialRepository,
+                            ComentarioRepository comentarioRepository) {
         this.repository = repository;
         this.historialRepository = historialRepository;
+        this.comentarioRepository = comentarioRepository;
     }
 
     @Transactional
@@ -72,7 +82,8 @@ public class SolicitudService {
     }
 
     @Transactional
-    public Solicitud cambiarEstado(UUID id, EstadoSolicitud nuevoEstado) {
+    public Solicitud cambiarEstado(UUID id, CambiarEstadoRequest request) {
+        EstadoSolicitud nuevoEstado = request.estado();
         Solicitud solicitud = repository.findById(id)
                 .orElseThrow(() -> new EstadoInvalidoException("Solicitud no encontrada: " + id));
 
@@ -80,6 +91,12 @@ public class SolicitudService {
         if (!permitidos.contains(nuevoEstado)) {
             throw new EstadoInvalidoException(
                     "No se puede pasar de %s a %s".formatted(solicitud.getEstado(), nuevoEstado));
+        }
+
+        // Para resolver hay que dejar escrito como se soluciono (trazabilidad)
+        boolean hayComentario = request.comentario() != null && !request.comentario().isBlank();
+        if (nuevoEstado == EstadoSolicitud.RESUELTA && !hayComentario) {
+            throw new DatoInvalidoException("Debes indicar cómo se solucionó la solicitud.");
         }
 
         EstadoSolicitud estadoAnterior = solicitud.getEstado();
@@ -100,7 +117,64 @@ public class SolicitudService {
         }
 
         historialRepository.save(new HistorialEstado(id, estadoAnterior, nuevoEstado, ahora));
+
+        if (hayComentario) {
+            TipoComentario tipo = nuevoEstado == EstadoSolicitud.RESUELTA
+                    ? TipoComentario.SOLUCION : TipoComentario.COMENTARIO;
+            guardarComentario(id, request.comentario().trim(), tipo,
+                    request.autorId(), request.autorNombre(), request.rol(), ahora);
+        }
         return repository.save(solicitud);
+    }
+
+    // Detalle completo: la solicitud, sus cambios de estado y sus comentarios.
+    // Un Cliente solo puede ver sus propias solicitudes.
+    public Map<String, Object> detalle(UUID id, String usuarioId, boolean staff) {
+        Solicitud solicitud = buscarConAcceso(id, usuarioId, staff);
+
+        Map<String, Object> resultado = new LinkedHashMap<>();
+        resultado.put("solicitud", solicitud);
+        resultado.put("historial", historial(id));
+        resultado.put("comentarios", comentarioRepository.findBySolicitudIdOrderByFechaAsc(id));
+        return resultado;
+    }
+
+    @Transactional
+    public ComentarioSolicitud comentar(UUID id, ComentarioRequest request) {
+        Solicitud solicitud = buscarConAcceso(id, request.autorId(), request.staff());
+
+        if (solicitud.getEstado() == EstadoSolicitud.CERRADA || solicitud.getEstado() == EstadoSolicitud.CANCELADA) {
+            throw new EstadoInvalidoException("La solicitud está " + solicitud.getEstado().name().toLowerCase()
+                    + " y ya no admite comentarios");
+        }
+
+        ComentarioSolicitud comentario = guardarComentario(id, request.texto().trim(), TipoComentario.COMENTARIO,
+                request.autorId(), request.autorNombre(), request.rol(), Instant.now());
+        solicitud.setFechaActualizacion(comentario.getFecha());
+        repository.save(solicitud);
+        return comentario;
+    }
+
+    private Solicitud buscarConAcceso(UUID id, String usuarioId, boolean staff) {
+        Solicitud solicitud = repository.findById(id)
+                .orElseThrow(() -> new EstadoInvalidoException("Solicitud no encontrada: " + id));
+        if (!staff && !solicitud.getUsuarioId().equals(usuarioId)) {
+            throw new AccesoDenegadoException("No tienes acceso a esta solicitud");
+        }
+        return solicitud;
+    }
+
+    private ComentarioSolicitud guardarComentario(UUID solicitudId, String texto, TipoComentario tipo,
+                                                  String autorId, String autorNombre, String rol, Instant fecha) {
+        ComentarioSolicitud comentario = new ComentarioSolicitud();
+        comentario.setSolicitudId(solicitudId);
+        comentario.setTexto(texto);
+        comentario.setTipo(tipo);
+        comentario.setAutorId(autorId == null ? "sistema" : autorId);
+        comentario.setAutorNombre(autorNombre == null ? "Sistema" : autorNombre);
+        comentario.setRol(rol == null ? "Operador" : rol);
+        comentario.setFecha(fecha);
+        return comentarioRepository.save(comentario);
     }
 
     // Cambios de estado de una solicitud, del mas antiguo al mas nuevo

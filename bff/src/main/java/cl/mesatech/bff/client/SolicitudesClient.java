@@ -1,6 +1,7 @@
 package cl.mesatech.bff.client;
 
-import cl.mesatech.bff.dto.CambiarEstadoRequest;
+import cl.mesatech.bff.dto.CambiarEstadoInterno;
+import cl.mesatech.bff.dto.ComentarioInterno;
 import cl.mesatech.bff.dto.CrearSolicitudInterna;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -58,10 +59,28 @@ public class SolicitudesClient {
                 .body(Map.class);
     }
 
-    public Map<String, Object> cambiarEstado(UUID id, String estado) {
+    public Map<String, Object> detalle(UUID id, String usuarioId, boolean staff) {
+        return restClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/internal/solicitudes/{id}/detalle")
+                        .queryParam("usuarioId", usuarioId)
+                        .queryParam("staff", staff)
+                        .build(id))
+                .retrieve()
+                .body(Map.class);
+    }
+
+    public Map<String, Object> comentar(UUID id, ComentarioInterno body) {
+        return restClient.post()
+                .uri("/internal/solicitudes/{id}/comentarios", id)
+                .body(body)
+                .retrieve()
+                .body(Map.class);
+    }
+
+    public Map<String, Object> cambiarEstado(UUID id, CambiarEstadoInterno body) {
         return restClient.patch()
                 .uri("/internal/solicitudes/{id}/estado", id)
-                .body(new CambiarEstadoRequest(estado))
+                .body(body)
                 .retrieve()
                 .body(Map.class);
     }
