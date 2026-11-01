@@ -15,6 +15,27 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: ${RABBIT_PORT:5672}
+    username: ${RABBIT_USER:solicitudes_consumidor}
+    password: ${RABBIT_PASSWORD:}
+    virtual-host: ${RABBIT_VHOST:mesatech}
+    connection-timeout: 5s
+    listener:
+      simple:
+        # Un mensaje a la vez; el ack se envia despues de guardar en RDS
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 1
+        acknowledge-mode: auto
+        default-requeue-rejected: true
+        # Si la cola aun no existe (o RabbitMQ esta caido) la app arranca igual y sigue intentando
+        missing-queues-fatal: false
+
+app:
+  rabbitmq:
+    queue: solicitudes.catalogo.queue
 
 logging:
   level:

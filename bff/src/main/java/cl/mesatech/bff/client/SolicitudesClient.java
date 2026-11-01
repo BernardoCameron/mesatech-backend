@@ -45,6 +45,14 @@ public class SolicitudesClient {
                 .body(List.class);
     }
 
+    // Categorias locales: la copia que recibio Solicitudes desde Catalogo
+    public List<Map<String, Object>> listarCategorias() {
+        return restClient.get()
+                .uri("/internal/categorias")
+                .retrieve()
+                .body(List.class);
+    }
+
     public List<Map<String, Object>> historial(UUID id) {
         return restClient.get()
                 .uri("/internal/solicitudes/{id}/historial", id)

@@ -26,6 +26,12 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/mesatech
       DB_USER: mesatech
       DB_PASSWORD: mesatech
+      # Consumidor: solo lee la cola. En EC2, RABBIT_HOST es la IP privada de la EC2 de RabbitMQ
+      RABBIT_HOST: ${RABBIT_HOST:-host.docker.internal}
+      RABBIT_USER: solicitudes_consumidor
+      RABBIT_PASSWORD: ${SOLICITUDES_RABBIT_PASSWORD}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8081:8081"
     depends_on:
@@ -39,6 +45,12 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/mesatech
       DB_USER: mesatech
       DB_PASSWORD: mesatech
+      # Publicador: solo escribe en catalogo.exchange
+      RABBIT_HOST: ${RABBIT_HOST:-host.docker.internal}
+      RABBIT_USER: catalogo_publicador
+      RABBIT_PASSWORD: ${CATALOGO_RABBIT_PASSWORD}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8082:8082"
     depends_on:
