@@ -44,4 +44,15 @@ public class Solicitud {
 
     @Column(nullable = false, updatable = false)
     private Instant fechaCreacion = Instant.now();
+
+    // Fechas para las metricas (null hasta que ocurre cada hito)
+    private Instant fechaActualizacion;
+
+    // Primera vez que pasa a ASIGNADA: sirve para el tiempo de respuesta
+    private Instant fechaAsignacion;
+
+    // Cuando pasa a RESUELTA: sirve para el tiempo de resolucion (MTTR)
+    private Instant fechaResolucion;
+
+    private Instant fechaCierre;
 }

@@ -74,6 +74,20 @@ public class SolicitudBffController {
         return client.listarTodas();
     }
 
+    // Cambios de estado de una solicitud con su fecha (linea de tiempo)
+    @GetMapping("/v1/solicitudes/{id}/historial")
+    @PreAuthorize("hasAnyRole('Operador','Administrador')")
+    public List<Map<String, Object>> historial(@PathVariable UUID id) {
+        return client.historial(id);
+    }
+
+    // Cantidades y tiempos promedio (respuesta y MTTR) para el dashboard
+    @GetMapping("/v1/metricas")
+    @PreAuthorize("hasAnyRole('Operador','Administrador')")
+    public Map<String, Object> metricas() {
+        return client.metricas();
+    }
+
     // Solo Operador y Administrador cambian estado.
     @PatchMapping("/v1/solicitudes/{id}/estado")
     @PreAuthorize("hasAnyRole('Operador','Administrador')")
