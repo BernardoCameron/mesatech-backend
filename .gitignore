@@ -21,3 +21,17 @@ Thumbs.db
 
 # Logs
 *.log
+
+
+# Llaves y credenciales
+*.pem
+*.key
+.env.*
+!.env.example
+
+# Maven / Java
+HELP.md
+hs_err_pid*
+
+# Datos locales
+*.sql.bak
