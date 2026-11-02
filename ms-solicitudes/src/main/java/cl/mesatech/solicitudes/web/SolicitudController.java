@@ -2,6 +2,7 @@ package cl.mesatech.solicitudes.web;
 
 import cl.mesatech.solicitudes.dto.CambiarEstadoRequest;
 import cl.mesatech.solicitudes.dto.CrearSolicitudRequest;
+import cl.mesatech.solicitudes.model.HistorialEstado;
 import cl.mesatech.solicitudes.model.Solicitud;
 import cl.mesatech.solicitudes.service.SolicitudService;
 import jakarta.validation.Valid;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 // Endpoints internos: solo los llama el BFF (nunca el frontend directo).
@@ -37,6 +39,18 @@ public class SolicitudController {
             return service.listarPorUsuario(usuarioId);
         }
         return service.listarTodas();
+    }
+
+    // Cambios de estado de una solicitud con su fecha
+    @GetMapping("/{id}/historial")
+    public List<HistorialEstado> historial(@PathVariable UUID id) {
+        return service.historial(id);
+    }
+
+    // Cantidades y tiempos promedio para el dashboard
+    @GetMapping("/metricas")
+    public Map<String, Object> metricas() {
+        return service.metricas();
     }
 
     @PatchMapping("/{id}/estado")

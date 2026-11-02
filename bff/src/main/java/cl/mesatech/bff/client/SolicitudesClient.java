@@ -44,6 +44,20 @@ public class SolicitudesClient {
                 .body(List.class);
     }
 
+    public List<Map<String, Object>> historial(UUID id) {
+        return restClient.get()
+                .uri("/internal/solicitudes/{id}/historial", id)
+                .retrieve()
+                .body(List.class);
+    }
+
+    public Map<String, Object> metricas() {
+        return restClient.get()
+                .uri("/internal/solicitudes/metricas")
+                .retrieve()
+                .body(Map.class);
+    }
+
     public Map<String, Object> cambiarEstado(UUID id, String estado) {
         return restClient.patch()
                 .uri("/internal/solicitudes/{id}/estado", id)
