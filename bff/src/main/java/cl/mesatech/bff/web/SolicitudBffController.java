@@ -1,9 +1,12 @@
 package cl.mesatech.bff.web;
 
 import cl.mesatech.bff.client.SolicitudesClient;
+import cl.mesatech.bff.dto.CambiarEstadoInterno;
 import cl.mesatech.bff.dto.CambiarEstadoRequest;
+import cl.mesatech.bff.dto.ComentarioInterno;
 import cl.mesatech.bff.dto.CrearSolicitudInterna;
 import cl.mesatech.bff.dto.NuevaSolicitudRequest;
+import cl.mesatech.bff.dto.NuevoComentarioRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -91,8 +94,49 @@ public class SolicitudBffController {
     // Solo Operador y Administrador cambian estado.
     @PatchMapping("/v1/solicitudes/{id}/estado")
     @PreAuthorize("hasAnyRole('Operador','Administrador')")
-    public Map cambiarEstado(@PathVariable UUID id, @Valid @RequestBody CambiarEstadoRequest body) {
-        return client.cambiarEstado(id, body.estado());
+    public Map cambiarEstado(@PathVariable UUID id, @Valid @RequestBody CambiarEstadoRequest body,
+                             JwtAuthenticationToken auth) {
+        Jwt jwt = auth.getToken();
+        CambiarEstadoInterno interno = new CambiarEstadoInterno(
+                body.estado(), body.comentario(),
+                jwt.getClaimAsString("oid"), jwt.getClaimAsString("name"), rolDe(auth));
+        return client.cambiarEstado(id, interno);
+    }
+
+    // Detalle: solicitud + historial + comentarios. Un Cliente solo ve las suyas
+    // (lo valida ms-solicitudes con el usuarioId del token).
+    @GetMapping("/v1/solicitudes/{id}")
+    @PreAuthorize("hasAnyRole('Cliente','Operador','Administrador')")
+    public Map<String, Object> detalle(@PathVariable UUID id, JwtAuthenticationToken auth) {
+        return client.detalle(id, auth.getToken().getClaimAsString("oid"), esStaff(auth));
+    }
+
+    @PostMapping("/v1/solicitudes/{id}/comentarios")
+    @PreAuthorize("hasAnyRole('Cliente','Operador','Administrador')")
+    public ResponseEntity<Map> comentar(@PathVariable UUID id, @Valid @RequestBody NuevoComentarioRequest body,
+                                        JwtAuthenticationToken auth) {
+        Jwt jwt = auth.getToken();
+        ComentarioInterno interno = new ComentarioInterno(
+                body.texto(), jwt.getClaimAsString("oid"), jwt.getClaimAsString("name"),
+                rolDe(auth), esStaff(auth));
+        return ResponseEntity.status(HttpStatus.CREATED).body(client.comentar(id, interno));
+    }
+
+    private boolean esStaff(JwtAuthenticationToken auth) {
+        return !rolDe(auth).equals("Cliente");
+    }
+
+    // El rol mas alto que trae el token
+    private String rolDe(JwtAuthenticationToken auth) {
+        boolean admin = false;
+        boolean operador = false;
+        for (var autoridad : auth.getAuthorities()) {
+            if (autoridad.getAuthority().equals("ROLE_Administrador")) admin = true;
+            if (autoridad.getAuthority().equals("ROLE_Operador")) operador = true;
+        }
+        if (admin) return "Administrador";
+        if (operador) return "Operador";
+        return "Cliente";
     }
 
     @SuppressWarnings("unchecked")

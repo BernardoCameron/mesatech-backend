@@ -65,7 +65,7 @@ public class SecurityPruebasConfig {
             Jwt jwt = Jwt.withTokenValue("sinauth")
                     .header("alg", "none")
                     .claim("oid", usuario)
-                    .claim("name", usuario)
+                    .claim("name", valor(request, "X-Test-Nombre", usuario))
                     .claim("roles", List.of(rol))
                     .issuedAt(Instant.now())
                     .expiresAt(Instant.now().plusSeconds(3600))

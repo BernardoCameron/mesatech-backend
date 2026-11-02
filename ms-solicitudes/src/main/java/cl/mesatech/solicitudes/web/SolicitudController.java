@@ -1,7 +1,9 @@
 package cl.mesatech.solicitudes.web;
 
 import cl.mesatech.solicitudes.dto.CambiarEstadoRequest;
+import cl.mesatech.solicitudes.dto.ComentarioRequest;
 import cl.mesatech.solicitudes.dto.CrearSolicitudRequest;
+import cl.mesatech.solicitudes.model.ComentarioSolicitud;
 import cl.mesatech.solicitudes.model.HistorialEstado;
 import cl.mesatech.solicitudes.model.Solicitud;
 import cl.mesatech.solicitudes.service.SolicitudService;
@@ -53,8 +55,21 @@ public class SolicitudController {
         return service.metricas();
     }
 
+    // Solicitud + historial + comentarios. staff=false: solo ve las suyas.
+    @GetMapping("/{id}/detalle")
+    public Map<String, Object> detalle(@PathVariable UUID id, @RequestParam String usuarioId,
+                                       @RequestParam boolean staff) {
+        return service.detalle(id, usuarioId, staff);
+    }
+
+    @PostMapping("/{id}/comentarios")
+    public ResponseEntity<ComentarioSolicitud> comentar(@PathVariable UUID id,
+                                                        @Valid @RequestBody ComentarioRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.comentar(id, request));
+    }
+
     @PatchMapping("/{id}/estado")
     public Solicitud cambiarEstado(@PathVariable UUID id, @Valid @RequestBody CambiarEstadoRequest request) {
-        return service.cambiarEstado(id, request.estado());
+        return service.cambiarEstado(id, request);
     }
 }
