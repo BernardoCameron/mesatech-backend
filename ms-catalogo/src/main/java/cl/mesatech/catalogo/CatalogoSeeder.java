@@ -8,12 +8,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-// Carga el catalogo minimo la primera vez que arranca el microservicio,
-// para que el frontend tenga datos reales desde el dia uno.
+// Carga las prioridades la primera vez que arranca el microservicio. Las
+// categorias ya no se siembran: las crea el Administrador y se propagan a
+// Solicitudes por RabbitMQ (una categoria sembrada aqui nunca llegaria alla).
 @Component
 public class CatalogoSeeder implements CommandLineRunner {
 
-    private static final List<String> CATEGORIAS = List.of("Hardware", "Software", "Red", "Accesos");
     private static final List<String> PRIORIDADES = List.of("Baja", "Media", "Alta");
 
     private final ItemCatalogoRepository repository;
@@ -24,7 +24,6 @@ public class CatalogoSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        seed(TipoItem.CATEGORIA, CATEGORIAS);
         seed(TipoItem.PRIORIDAD, PRIORIDADES);
     }
 

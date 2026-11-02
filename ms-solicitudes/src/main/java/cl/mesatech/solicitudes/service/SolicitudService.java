@@ -8,6 +8,7 @@ import cl.mesatech.solicitudes.model.EstadoSolicitud;
 import cl.mesatech.solicitudes.model.HistorialEstado;
 import cl.mesatech.solicitudes.model.Solicitud;
 import cl.mesatech.solicitudes.model.TipoComentario;
+import cl.mesatech.solicitudes.repository.CategoriaLocalRepository;
 import cl.mesatech.solicitudes.repository.ComentarioRepository;
 import cl.mesatech.solicitudes.repository.HistorialEstadoRepository;
 import cl.mesatech.solicitudes.repository.SolicitudRepository;
@@ -46,16 +47,23 @@ public class SolicitudService {
     private final SolicitudRepository repository;
     private final HistorialEstadoRepository historialRepository;
     private final ComentarioRepository comentarioRepository;
+    private final CategoriaLocalRepository categoriaRepository;
 
     public SolicitudService(SolicitudRepository repository, HistorialEstadoRepository historialRepository,
-                            ComentarioRepository comentarioRepository) {
+                            ComentarioRepository comentarioRepository, CategoriaLocalRepository categoriaRepository) {
         this.repository = repository;
         this.historialRepository = historialRepository;
         this.comentarioRepository = comentarioRepository;
+        this.categoriaRepository = categoriaRepository;
     }
 
     @Transactional
     public Solicitud crear(CrearSolicitudRequest request) {
+        // La categoria debe existir en la copia local que Solicitudes recibio desde Catalogo
+        if (!categoriaRepository.existsByNombre(request.categoria())) {
+            throw new DatoInvalidoException("La categoría " + request.categoria() + " aún no está disponible");
+        }
+
         Solicitud solicitud = new Solicitud();
         solicitud.setTitulo(request.titulo());
         solicitud.setDescripcion(request.descripcion());

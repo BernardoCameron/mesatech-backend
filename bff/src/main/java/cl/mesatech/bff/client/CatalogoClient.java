@@ -7,6 +7,7 @@ import org.springframework.web.client.RestClient;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 // Unico componente del BFF que conoce la URL de ms-catalogo.
 @Component
@@ -22,6 +23,13 @@ public class CatalogoClient {
         return restClient.post()
                 .uri("/internal/categorias")
                 .body(body)
+                .retrieve()
+                .body(Map.class);
+    }
+
+    public Map<String, Object> republicarCategoria(UUID id) {
+        return restClient.post()
+                .uri("/internal/categorias/{id}/republicar", id)
                 .retrieve()
                 .body(Map.class);
     }

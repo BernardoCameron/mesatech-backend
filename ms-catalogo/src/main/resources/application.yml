@@ -12,6 +12,23 @@ spring:
     hibernate:
       ddl-auto: update
     open-in-view: false
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: ${RABBIT_PORT:5672}
+    username: ${RABBIT_USER:catalogo_publicador}
+    password: ${RABBIT_PASSWORD:}
+    virtual-host: ${RABBIT_VHOST:mesatech}
+    connection-timeout: 5s
+    # Confirmaciones del broker y aviso si el mensaje no llega a ninguna cola
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+
+app:
+  rabbitmq:
+    exchange: catalogo.exchange
+    routing-key: categoria.creada
 
 logging:
   level:
