@@ -1,0 +1,15 @@
+# EC2 ep2-catalogo: ms-catalogo (publicador) conectado a su RDS y a RabbitMQ.
+# Uso (dentro de deploy/catalogo):  cp .env.example .env  y  docker compose up -d --build
+services:
+  ms-catalogo:
+    build: ../../ms-catalogo
+    restart: unless-stopped
+    environment:
+      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      RABBIT_HOST: ${RABBIT_HOST}
+      RABBIT_USER: catalogo_publicador
+      RABBIT_PASSWORD: ${RABBIT_PASSWORD}
+    ports:
+      - "8082:8082"
